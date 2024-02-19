@@ -1,0 +1,66 @@
+---
+name: 'build-and-publish-secdb'
+description: |
+  Build and push security DB.
+
+inputs:
+  workload_identity_provider:
+    description: |
+      GCO Workload Identity.
+    required: false
+    default: 'true'
+  service_account:
+    description: |
+      GCP service account.
+    required: false
+    default: 'true'
+  wolfictl_args:
+    description: |
+      Wolfictl args to run the advisory secdb.
+    required: false
+    default: 'true'
+  gcs_apk_bucket_name:
+    description: |
+      GCS bucket to store the security.json.
+    required: false
+    default: 'true'
+  gcs_apk_directory_name:
+    description: |
+      Directory to store the security.json.
+    required: false
+    default: 'true'
+
+runs:
+  using: "composite"
+  steps:
+    - id: auth
+      name: 'Authenticate to Google Cloud'
+      uses: google-github-actions/auth@v2
+      with:
+        workload_identity_provider: ${{ inputs.workload_identity_provider }}
+        service_account: ${{ inputs.service_account }}
+
+    - uses: google-github-actions/setup-gcloud@v2
+      with:
+        project_id: prod-images-c6e5
+
+    - name: 'Check that GCloud is properly configured'
+      run: |
+        gcloud info
+        gcloud --quiet alpha storage ls 1> /dev/null
+      shell: bash
+
+    - name: Build the security database
+      uses: docker://ghcr.io/wolfi-dev/sdk:latest@sha256:75468048eaa142564704993db5a52d82f1660269ea8cb8499b59e16ac6d10b41
+      with:
+        entrypoint: wolfictl
+        args: ${{ inputs.wolfictl_args }}
+
+    - name: 'Upload the security database to a bucket'
+      run: |
+        # Don't cache the security.json.
+        gcloud --quiet alpha storage cp \
+            --cache-control=no-store \
+            ./security.json \
+            gs://${{ inputs.gcs_apk_bucket_name }}/${{ inputs.gcs_apk_directory_name}}/
+      shell: bash
