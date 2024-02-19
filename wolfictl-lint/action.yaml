@@ -1,12 +1,25 @@
 ---
 name: 'wolfictl-lint'
 description: |
-  Wolfictl Lint.
+  Wolfictl Lint and Lint yam.
+
+inputs:
+  run_wolfictl_lint:
+    description: |
+      Run only wolfictl lint.
+    required: false
+    default: 'true'
+  run_wolfictl_lint_yam:
+    description: |
+      Run only wolfictl lint yam.
+    required: false
+    default: 'true'
 
 runs:
   using: "composite"
   steps:
     - name: Lint
+      if: ${{ inputs.run_wolfictl_lint_yam == 'true' }}
       id: lint
       uses: docker://ghcr.io/wolfi-dev/wolfictl:latest@sha256:c0ce3a26b4fe886fb2da4bfc32be3472e7ddb76ae7f3463c82f7534b1c867a27
       with:
@@ -14,6 +27,7 @@ runs:
         args: lint --skip-rule no-makefile-entry-for-package
 
     - name: Enforce YAML formatting
+      if: ${{ inputs.run_wolfictl_lint_yam == 'true' }}
       id: lint-yaml
       uses: docker://ghcr.io/wolfi-dev/wolfictl:latest@sha256:c0ce3a26b4fe886fb2da4bfc32be3472e7ddb76ae7f3463c82f7534b1c867a27
       with:
