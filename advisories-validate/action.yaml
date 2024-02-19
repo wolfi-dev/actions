@@ -1,0 +1,54 @@
+---
+name: 'advisories-validate'
+description: |
+  Wolfictl Advisories validate.
+
+inputs:
+  advisories-directory:
+    description: |
+      The advisories repo directory.
+    required: true
+    default: ""
+  packages-directory:
+    description: |
+      The packages repo directory.
+    required: true
+    default: ""
+  repository:
+    description: |
+      The GitHub repository to be used (org/repo format).
+    required: true
+    default: ""
+  package-repo-url:
+    description: |
+      Where can find the apk index.
+    required: true
+    default: ""
+  token:
+    description: |
+      GitHub Token or OctoSts token.
+    required: true
+    default: ""
+  fork_point:
+    description: |
+      The fork point to be used.
+    required: true
+    default: ""
+
+runs:
+  using: 'docker'
+  image: docker://ghcr.io/wolfi-dev/sdk:latest@sha256:75468048eaa142564704993db5a52d82f1660269ea8cb8499b59e16ac6d10b41
+  entrypoint: wolfictl
+  args:
+    - adv
+    - validate
+    - -v
+    - --skip-alias
+    - --no-distro-detection
+    - --advisories-repo-dir=${{ inputs.advisories-directory }}
+    - --advisories-repo-url=https://github.com/${{ inputs.repository }}
+    - --advisories-repo-base-hash=${{ inputs.fork_point }}
+    - --distro-repo-dir=${{ inputs.packages-directory }}
+    - --package-repo-url=${{ inputs.package-repo-url }}
+  env:
+    GITHUB_TOKEN: ${{ inputs.token }}
