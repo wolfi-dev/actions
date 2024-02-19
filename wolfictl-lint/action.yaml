@@ -8,14 +8,14 @@ runs:
   steps:
     - name: Lint
       id: lint
-      uses: docker://ghcr.io/wolfi-dev/wolfictl:latest@sha256:2cd66b270184a8c035b5365b34c0402d542e44da39cf3537bd58725ecd2ce0f2
+      uses: docker://ghcr.io/wolfi-dev/wolfictl:latest@sha256:c0ce3a26b4fe886fb2da4bfc32be3472e7ddb76ae7f3463c82f7534b1c867a27
       with:
         entrypoint: wolfictl
         args: lint --skip-rule no-makefile-entry-for-package
 
     - name: Enforce YAML formatting
       id: lint-yaml
-      uses: docker://ghcr.io/wolfi-dev/wolfictl:latest@sha256:2cd66b270184a8c035b5365b34c0402d542e44da39cf3537bd58725ecd2ce0f2
+      uses: docker://ghcr.io/wolfi-dev/wolfictl:latest@sha256:c0ce3a26b4fe886fb2da4bfc32be3472e7ddb76ae7f3463c82f7534b1c867a27
       with:
         entrypoint: wolfictl
         args: lint yam
