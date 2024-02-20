@@ -40,7 +40,7 @@ runs:
     - --github-release-query=false
     - --use-gitsign
     - --github-labels=request-version-update
-    - --github-labels="automated pr"
+    - --github-labels=automated pr
   env:
     GITHUB_TOKEN: ${{ inputs.token }}
     RELEASE_MONITOR_TOKEN: ${{ inputs.release_monitor_token }}

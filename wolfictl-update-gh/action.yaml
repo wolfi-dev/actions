@@ -35,7 +35,7 @@ runs:
     - --release-monitoring-query=false
     - --use-gitsign
     - --github-labels=request-version-update
-    - --github-labels="automated pr"
+    - --github-labels=automated pr
   env:
     GITHUB_TOKEN: ${{ inputs.token }}
     GIT_AUTHOR_NAME: ${{ inputs.git_author_name }}
