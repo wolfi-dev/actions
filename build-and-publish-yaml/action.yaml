@@ -1,7 +1,7 @@
 ---
-name: 'build-and-publish-secdb'
+name: 'build-and-publish-yaml'
 description: |
-  Build and push security DB.
+  Build and publish advisories yaml.
 
 inputs:
   workload_identity_provider:
@@ -12,7 +12,7 @@ inputs:
   service_account:
     description: |
       GCP service account.
-    required: false
+    required: true
     default: ''
   gcp_project_id:
     description: |
@@ -32,11 +32,6 @@ inputs:
   gcs_apk_directory_name:
     description: |
       Directory to store the security.json.
-    required: false
-    default: ''
-  enable_acl_public_read:
-    description: |
-      Enable acl public read (set '--canned-acl=publicRead').
     required: false
     default: ''
 
@@ -70,7 +65,7 @@ runs:
       run: |
         # Don't cache the security.json.
         gcloud --quiet alpha storage cp \
-            ${{ inputs.enable_acl_public_read }} --cache-control=no-store \
-            ./security.json \
+            --cache-control=no-store \
+            ./advisories.yaml \
             gs://${{ inputs.gcs_apk_bucket_name }}/${{ inputs.gcs_apk_directory_name}}/
       shell: bash
