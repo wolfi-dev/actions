@@ -29,6 +29,11 @@ inputs:
       Directory to store the security.json.
     required: false
     default: 'true'
+  enable_acl_public_read:
+    description: |
+      Enable acl public read (set '--canned-acl=publicRead').
+    required: false
+    default: ''
 
 runs:
   using: "composite"
@@ -60,8 +65,7 @@ runs:
       run: |
         # Don't cache the security.json.
         gcloud --quiet alpha storage cp \
-            --canned-acl=publicRead \
-            --cache-control=no-store \
+            ${{ inputs.enable_acl_public_read }} --cache-control=no-store \
             ./security.json \
             gs://${{ inputs.gcs_apk_bucket_name }}/${{ inputs.gcs_apk_directory_name}}/
       shell: bash
