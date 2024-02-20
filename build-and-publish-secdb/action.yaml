@@ -7,28 +7,33 @@ inputs:
   workload_identity_provider:
     description: |
       GCO Workload Identity.
-    required: false
-    default: 'true'
+    required: true
+    default: ''
   service_account:
     description: |
       GCP service account.
     required: false
-    default: 'true'
+    default: ''
+  gcp_project_id:
+    description: |
+      GCP project id.
+    required: true
+    default: ''
   wolfictl_args:
     description: |
       Wolfictl args to run the advisory secdb.
-    required: false
-    default: 'true'
+    required: true
+    default: ''
   gcs_apk_bucket_name:
     description: |
       GCS bucket to store the security.json.
-    required: false
-    default: 'true'
+    required: true
+    default: ''
   gcs_apk_directory_name:
     description: |
       Directory to store the security.json.
     required: false
-    default: 'true'
+    default: ''
   enable_acl_public_read:
     description: |
       Enable acl public read (set '--canned-acl=publicRead').
@@ -47,7 +52,7 @@ runs:
 
     - uses: google-github-actions/setup-gcloud@v2
       with:
-        project_id: prod-images-c6e5
+        project_id: ${{ inputs.gcp_project_id }}
 
     - name: 'Check that GCloud is properly configured'
       run: |
