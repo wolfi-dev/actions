@@ -60,6 +60,7 @@ runs:
       run: |
         # Don't cache the security.json.
         gcloud --quiet alpha storage cp \
+            --canned-acl=publicRead \
             --cache-control=no-store \
             ./security.json \
             gs://${{ inputs.gcs_apk_bucket_name }}/${{ inputs.gcs_apk_directory_name}}/
