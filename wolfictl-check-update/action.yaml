@@ -1,0 +1,27 @@
+---
+name: 'wolfictl-check-updates'
+description: |
+  Wolfictl Check Updates.
+
+inputs:
+  token:
+    description: |
+      GitHub Token or OctoSts token.
+    required: false
+    default: ""
+  changed_files:
+    description: |
+      List of changed files to check.
+    required: true
+    default: ""
+
+runs:
+  using: 'docker'
+  image: docker://ghcr.io/wolfi-dev/wolfictl:latest@sha256:b4e251fddf75847e3d93abcd0a9d7edd401a8eb7efde555c48a9ebd9d2c077a8
+  entrypoint: wolfictl
+  args:
+    - check
+    - update
+    - ${{ inputs.changed_files }}
+  env:
+    GITHUB_TOKEN: ${{ inputs.token }}
