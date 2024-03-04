@@ -1,0 +1,273 @@
+---
+name: 'ci-build'
+
+on:
+  workflow_call:
+    inputs:
+      enterprise:
+        type: string
+        required: false
+        description: 'if is an enterprise build.'
+        default: 'false'
+      enterprise_bucket_name:
+        type: string
+        required: false
+        description: 'Bucket name to sync.'
+        default: ''
+      check_sbom:
+        type: string
+        description: "Octo STS Identity"
+        required: false
+        default: 'true'
+      arch:
+        type: string
+        required: true
+        description: 'arch to run the build.'
+      packages:
+        type: string
+        required: true
+        description: "packages to build."
+      runs_on_group_name:
+        type: string
+        required: true
+        description: "name of the runner to build the packages."
+      checkout_sha:
+        type: string
+        required: false
+        description: "check out sha for enterprise builds."
+      melange_keyname:
+        type: string
+        required: true
+        description: "Name of the melange signing key."
+      service_account:
+        type: string
+        description: "GCP service account"
+        required: false
+      workload_identity_provider:
+        type: string
+        description: "GCP worload identity provides"
+        required: false
+      octo_scope:
+        type: string
+        description: "Octo STS Scope"
+        required: false
+      octo_identity:
+        type: string
+        description: "Octo STS Identity"
+        required: false
+
+    secrets:
+      token:
+        description: "GH Token"
+        required: false
+
+    outputs:
+      packages_were_built:
+        description: 'Built packages.'
+        value: ${{ jobs.build.outputs.packages_were_built }}
+
+jobs:
+  build:
+    runs-on:
+      group: ${{ inputs.runs_on_group_name }}-${{ inputs.arch }}
+
+    timeout-minutes: 600 # default is 360
+
+    container:
+      image: ghcr.io/wolfi-dev/sdk:latest@sha256:7c1012eb43ee829351f3b33eb0f150ca2d2e176545bd58a398a7427f5645d9c9
+      options: |
+        --cap-add NET_ADMIN --cap-add SYS_ADMIN --device /dev/fuse --security-opt seccomp=unconfined --security-opt apparmor:unconfined
+
+    outputs:
+      packages_were_built: ${{ steps.file_check.outputs.exists }}
+
+    steps:
+      - name: Free up runner disk space
+        run: |
+          set -x
+          rm -rf /usr/share/dotnet
+          rm -rf "$AGENT_TOOLSDIRECTORY"
+
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        if: ${{ inputs.enterprise == 'false' }}
+
+
+      - uses: chainguard-dev/octo-sts-action@6177b4481c00308b3839969c3eca88c96a91775f # v1.0.0
+        if: ${{ inputs.enterprise == 'true' }}
+        id: octo-sts
+        with:
+          scope: ${{ inputs.octo_scope }}
+          identity: ${{ inputs.octo_identity }}
+
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        if: ${{ inputs.enterprise == 'true' }}
+        with:
+          ref: ${{ inputs.checkout_sha }}
+          submodules: "recursive"
+          token: ${{ steps.octo-sts.outputs.token }}
+
+      - name: 'Trust the github workspace'
+        run: |
+          # This is to avoid fatal errors about "dubious ownership" because we are
+          # running inside of a container action with the workspace mounted in.
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
+      - uses: google-github-actions/auth@a6e2e39c0a0331da29f7fd2c2a20a427e8d3ad1f # v2.1.1
+        if: ${{ inputs.enterprise == 'true' }}
+        with:
+          workload_identity_provider: ${{ inputs.workload_identity_provider }}
+          service_account: ${{ inputs.service_account }}
+
+      - name: Generate snapshot date
+        id: snapshot-date
+        run: |
+          echo "date=$(date -u +%Y%m%d)" >> "$GITHUB_OUTPUT"
+          echo "epoch=$(date -u +%s)" >> "$GITHUB_OUTPUT"
+        shell: bash
+
+      - name: 'Generate local signing key'
+        shell: bash
+        run: |
+          make MELANGE="melange" ${{ inputs.melange_keyname }}
+
+      - name: 'touch signing key'
+        shell: bash
+        if: ${{ inputs.enterprise == 'true' }}
+        run: |
+          # Touch it with the epoch date to convince `make` that we don't need to
+          # rebuild the targets that depend on this (all)
+          touch -d @0 ${{ inputs.melange_keyname }}
+
+      - name: 'Prepare package repository'
+        if: ${{ inputs.enterprise == 'true' }}
+        run: |
+          # yay wolfi!
+          apk add gcsfuse
+
+          # Set up a gcsfuse RO mount to the public bucket. This is a cheap and
+          # cheerful way to recreate the make targets (class A HEADs) locally
+          # without syncing the whole bucket (class A+B).
+          mkdir -p /gcsfuse/enterprise-registry
+          gcsfuse -o ro --implicit-dirs --only-dir os ${{ inputs.enterprise_bucket_name }} /gcsfuse/enterprise-registry
+
+          mkdir -p ./packages/${{ inputs.arch }}
+          # Symlink the gcsfuse mount to ./packages/ and the pub key to workaround the Makefile CWD assumptions
+          ln -s /gcsfuse/enterprise-registry/${{ inputs.arch }}/*.apk ./packages/${{ inputs.arch }}/
+
+          # Make a copy of the APKINDEX.* since we'll need to write to it on package builds
+          cp /gcsfuse/enterprise-registry/${{ inputs.arch }}/APKINDEX.* ./packages/${{ inputs.arch }}/
+
+          # Ensure the file exists at all, so we can upload it as an artifact.
+          touch packages.log
+
+      - name: 'Build Wolfi'
+        if: ${{ inputs.enterprise == 'false' }}
+        run: |
+          # Setup the melange cache dir on the host so we can use that in subsequent builds
+          mkdir ../.melangecache
+          for package in ${{ inputs.packages }}; do
+            make MELANGE_EXTRA_OPTS="--create-build-log --cache-dir=$(pwd)/../.melangecache" REPO="$GITHUB_WORKSPACE/packages" package/$package -j1
+            make REPO="$GITHUB_WORKSPACE/packages" test/$package -j1
+          done
+
+      - name: 'Build Enterprise Packages'
+        if: ${{ inputs.enterprise == 'true' }}
+        run: |
+          # Setup the melange cache dir on the host so we can use that in subsequent builds
+          mkdir ../.melangecache
+          for package in ${{ inputs.packages }}; do
+            make MELANGE_EXTRA_OPTS="--create-build-log --cache-dir=$(pwd)/../.melangecache --keyring-append=/gcsfuse/enterprise-registry/chainguard-enterprise.rsa.pub" REPO="$GITHUB_WORKSPACE/packages" package/$package -j1
+            make REPO="$GITHUB_WORKSPACE/packages" MELANGE_EXTRA_OPTS="--keyring-append=/gcsfuse/enterprise-registry/chainguard-enterprise.rsa.pub" test/$package -j1
+          done
+
+      - name: Check for file
+        id: file_check
+        run: |
+          if test -f "packages.log"; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+          touch packages.log
+
+      - name: Identify newly built packages
+        id: list_built_packages
+        if: ${{ steps.file_check.outputs.exists == 'true'}}
+        run: |
+          {
+            echo 'files_to_upload<<EOF'
+
+            awk -F'|' '{ printf "./packages/%s/%s-%s.apk\n", $1, $3, $4}' < packages.log
+
+            echo EOF
+          } >> "$GITHUB_OUTPUT"
+
+      - name: "Check that packages can be installed with apk add"
+        run: |
+          # Create a fake linux fs under /tmp/emptyroot to pass to `apk --root`.
+          mkdir -p /tmp/emptyroot/etc/apk
+          cp -r /etc/apk/* /tmp/emptyroot/etc/apk/
+          cat /dev/null > /tmp/emptyroot/etc/apk/world
+
+          mkdir -p /tmp/emptyroot/lib/apk/db
+          touch /tmp/emptyroot/lib/apk/db/{installed,lock,scripts.tar,triggers}
+
+          mkdir -p /tmp/emptyroot/var/cache/apk
+          apk update --root /tmp/emptyroot
+
+          # Find .apk files and add them to the string
+          for f in $(echo "${{ steps.list_built_packages.outputs.files_to_upload }}"); do
+              tar -Oxf $f .PKGINFO
+              apk add --root /tmp/emptyroot --repository ./packages --allow-untrusted --simulate $f
+          done
+
+      - name: Check SBOMs
+        if: ${{ inputs.check_sbom == 'true' }}
+        run: |
+          apk add py3-ntia-conformance-checker
+          for f in $(find packages -name '*.apk'); do
+              echo ==== Checking SBOM for $f ====
+              tar -Oxf $f var/lib/db/sbom/ > sbom.json
+              echo ::group::sbom.json
+              cat sbom.json
+              echo ::endgroup::
+              ntia-checker -v --file sbom.json
+          done
+
+      - name: Check diff
+        if: steps.file_check.outputs.exists == 'true'
+        # Let's not fail the whole job if this step fails as it is for improved UX rather than an enforced check
+        continue-on-error: true
+        run: |
+          wolfictl check diff
+
+      - name: Check for diff file
+        id: diff_file_check
+        shell: bash
+        run: |
+          if test -f "diff.log"; then
+            cat diff.log
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+
+      # Use the x86_64 build results for the comment for now so we don't have duplicates.
+      - name: PR comment diff
+        if: steps.diff_file_check.outputs.exists == 'true' && ${{ inputs.arch }} == 'x86_64'
+        uses: thollander/actions-comment-pull-request@632cf9ce90574d125be56b5f3405cda41a84e2fd # v2.3.1
+        # We're seeing jobs using merge queues fail
+        continue-on-error: true
+        with:
+          filePath: diff.log
+          GITHUB_TOKEN: ${{ secrets.token || steps.octo-sts.outputs.token }}
+
+      - name: 'Upload built packages to GitHub artifacts'
+        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4.3.1
+        with:
+          path: |
+            ${{ steps.list_built_packages.outputs.files_to_upload }}
+            ./packages.log
+          name: packages-${{ inputs.arch }}
+          retention-days: 1
+          if-no-files-found: warn
