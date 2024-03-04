@@ -30,7 +30,7 @@ on:
       runs_on_group_name:
         type: string
         required: true
-        description: "packages to build."
+        description: "name of the runner to build the packages."
       checkout_sha:
         type: string
         required: false
