@@ -21,7 +21,7 @@ runs:
     - name: Lint
       if: ${{ inputs.run_wolfictl_lint == 'true' }}
       id: lint
-      uses: docker://ghcr.io/wolfi-dev/wolfictl:latest@sha256:56c7527d684b6d40d88c095b67c50b9b28079565af8bff997cb0a7b6bf99fa59
+      uses: docker://ghcr.io/wolfi-dev/wolfictl:latest@sha256:5f4945a73315706ecac4bcbe9b05aac73bbfde3321ae4d3f3166c16b4abe373f
       with:
         entrypoint: wolfictl
         args: lint --skip-rule no-makefile-entry-for-package
@@ -29,7 +29,7 @@ runs:
     - name: Enforce YAML formatting
       if: ${{ inputs.run_wolfictl_lint_yam == 'true' }}
       id: lint-yaml
-      uses: docker://ghcr.io/wolfi-dev/wolfictl:latest@sha256:56c7527d684b6d40d88c095b67c50b9b28079565af8bff997cb0a7b6bf99fa59
+      uses: docker://ghcr.io/wolfi-dev/wolfictl:latest@sha256:5f4945a73315706ecac4bcbe9b05aac73bbfde3321ae4d3f3166c16b4abe373f
       with:
         entrypoint: wolfictl
         args: lint yam
