@@ -60,17 +60,22 @@ runs:
         gcloud --quiet alpha storage ls 1> /dev/null
       shell: bash
 
+    - name: 'create temp OSV directory'
+      run: |
+        mkdir -p osv
+      shell: bash
+
     - name: Build the security database
       uses: docker://ghcr.io/wolfi-dev/sdk:latest@sha256:931af5f52f9079fd5cd55a0a8caa23eec2f874ecfddd47ac475c1e0f47aae306
       with:
         entrypoint: wolfictl
-        args: advisory export --format osv -o osv.yaml ${{ inputs.wolfictl_args }}
+        args: advisory export --format osv -o osv ${{ inputs.wolfictl_args }}
 
     - name: 'Upload the security database to a bucket'
       run: |
         # Don't cache the security.json.
         gcloud --quiet alpha storage cp \
             ${{ inputs.enable_acl_public_read }} --cache-control=no-store \
-            ./osv.yaml \
+            './osv/**' \
             gs://${{ inputs.gcs_apk_bucket_name }}/${{ inputs.gcs_apk_directory_name}}/
       shell: bash
