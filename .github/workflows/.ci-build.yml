@@ -263,7 +263,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.token || steps.octo-sts.outputs.token }}
 
       - name: 'Upload built packages to GitHub artifacts'
-        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4.3.1
+        uses: actions/upload-artifact@1746f4ab65b179e0ea60a494b83293b640dd5bba # v4.3.2
         with:
           path: |
             ${{ steps.list_built_packages.outputs.files_to_upload }}
