@@ -61,7 +61,7 @@ runs:
       shell: bash
 
     - name: Build the security database
-      uses: docker://ghcr.io/wolfi-dev/sdk:latest@sha256:ca95a126226930dc166494807a62014a21afb620ba6403ebfa3dcfacf932c77d
+      uses: docker://ghcr.io/wolfi-dev/sdk:latest@sha256:6d49f779092c0bfacb2296654376aac5607dd946a5cd077f06e05e89a2341495
       with:
         entrypoint: wolfictl
         args: ${{ inputs.wolfictl_args }}
