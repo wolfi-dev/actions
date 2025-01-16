@@ -5,6 +5,8 @@ on:
   schedule:
     - cron: "0 1 * * *"
 
+permissions: {}
+
 jobs:
   image-update:
     name: Image digest update
@@ -27,3 +29,5 @@ jobs:
       - uses: chainguard-dev/digestabot@cee67ce333549107c469dbe7656afda5a1e1f287 # v1.2.1
         with:
           token: ${{ steps.octo-sts.outputs.token }}
+          author: "octo-sts[bot]"
+          committer: "157150467+octo-sts[bot]@users.noreply.github.com"
