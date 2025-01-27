@@ -42,7 +42,7 @@ runs:
   args:
     - adv
     - validate
-    - -v
+    - --log-level=info
     - --skip-alias
     - --no-distro-detection
     - --advisories-repo-dir=${{ inputs.advisories-directory }}
