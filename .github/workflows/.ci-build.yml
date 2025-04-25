@@ -74,7 +74,7 @@ jobs:
     timeout-minutes: 600 # default is 360
 
     container:
-      image: ghcr.io/wolfi-dev/sdk:latest@sha256:a9742e3ded76259ecd53bb17879d85d4e196b8588734f08a5d27cb71f42ec98b
+      image: ghcr.io/wolfi-dev/sdk:latest@sha256:9c17fee97fdc9a4a3c106e1112682dcfffe3f7076ccc0b489e94bda5e3cec8e7
       options: |
         --cap-add NET_ADMIN --cap-add SYS_ADMIN --device /dev/fuse --security-opt seccomp=unconfined --security-opt apparmor:unconfined
 
