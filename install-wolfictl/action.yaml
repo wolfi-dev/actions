@@ -10,6 +10,6 @@ runs:
       run: |
         # Copy wolfictl out of the wolfictl image and onto PATH
         TMP=$(mktemp -d)
-        docker run --rm -i -v $TMP:/out --entrypoint /bin/sh ghcr.io/wolfi-dev/sdk:latest@sha256:a439acb901a113fa60515b7f03ae955cda120c5c629540f3dfd43f1974d5bb50 -c "cp /usr/bin/wolfictl /out"
+        docker run --rm -i -v $TMP:/out --entrypoint /bin/sh ghcr.io/wolfi-dev/sdk:latest@sha256:e64327d01ecfa1e25941c8969a82120467519d17f080c3481d4b6e211b1302a2 -c "cp /usr/bin/wolfictl /out"
         echo "$TMP" >> $GITHUB_PATH
       shell: bash
