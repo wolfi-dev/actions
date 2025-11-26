@@ -88,7 +88,7 @@ jobs:
           rm -rf /usr/share/dotnet
           rm -rf "$AGENT_TOOLSDIRECTORY"
 
-      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
+      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
         if: ${{ inputs.enterprise == 'false' }}
 
 
@@ -99,7 +99,7 @@ jobs:
           scope: ${{ inputs.octo_scope }}
           identity: ${{ inputs.octo_identity }}
 
-      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
+      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
         if: ${{ inputs.enterprise == 'true' }}
         with:
           ref: ${{ inputs.checkout_sha }}
