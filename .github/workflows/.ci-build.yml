@@ -112,7 +112,7 @@ jobs:
           # running inside of a container action with the workspace mounted in.
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
 
-      - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
+      - uses: step-security/google-github-auth@57c51210cb4d85d8a5d39dc4c576c79bd693f914 # v3.0.1
         if: ${{ inputs.enterprise == 'true' }}
         with:
           workload_identity_provider: ${{ inputs.workload_identity_provider }}
