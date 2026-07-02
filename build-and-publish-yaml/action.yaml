@@ -67,5 +67,8 @@ runs:
         gcloud --quiet alpha storage cp \
             --cache-control=no-store \
             ./advisories.yaml \
-            gs://${{ inputs.gcs_apk_bucket_name }}/${{ inputs.gcs_apk_directory_name}}/
+            "gs://${GCS_APK_BUCKET_NAME}/${GCS_APK_DIRECTORY_NAME}/"
       shell: bash
+      env:
+        GCS_APK_BUCKET_NAME: ${{ inputs.gcs_apk_bucket_name }}
+        GCS_APK_DIRECTORY_NAME: ${{ inputs.gcs_apk_directory_name}}

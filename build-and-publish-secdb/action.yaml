@@ -69,8 +69,15 @@ runs:
     - name: 'Upload the security database to a bucket'
       run: |
         # Don't cache the security.json.
+        # ENABLE_ACL_PUBLIC_READ is intentionally unquoted: it is an optional
+        # flag that is either empty or "--canned-acl=publicRead" and must
+        # word-split (or vanish when empty).
         gcloud --quiet alpha storage cp \
-            ${{ inputs.enable_acl_public_read }} --cache-control=no-store \
+            $ENABLE_ACL_PUBLIC_READ --cache-control=no-store \
             ./security.json \
-            gs://${{ inputs.gcs_apk_bucket_name }}/${{ inputs.gcs_apk_directory_name}}/
+            "gs://${GCS_APK_BUCKET_NAME}/${GCS_APK_DIRECTORY_NAME}/"
       shell: bash
+      env:
+        ENABLE_ACL_PUBLIC_READ: ${{ inputs.enable_acl_public_read }}
+        GCS_APK_BUCKET_NAME: ${{ inputs.gcs_apk_bucket_name }}
+        GCS_APK_DIRECTORY_NAME: ${{ inputs.gcs_apk_directory_name}}

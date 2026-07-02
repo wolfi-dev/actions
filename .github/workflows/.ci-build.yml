@@ -127,19 +127,26 @@ jobs:
 
       - name: 'Generate local signing key'
         shell: bash
+        env:
+          MELANGE_KEYNAME: ${{ inputs.melange_keyname }}
         run: |
-          make MELANGE="melange" ${{ inputs.melange_keyname }}
+          make MELANGE="melange" "$MELANGE_KEYNAME"
 
       - name: 'touch signing key'
         shell: bash
         if: ${{ inputs.enterprise == 'true' }}
+        env:
+          MELANGE_KEYNAME: ${{ inputs.melange_keyname }}
         run: |
           # Touch it with the epoch date to convince `make` that we don't need to
           # rebuild the targets that depend on this (all)
-          touch -d @0 ${{ inputs.melange_keyname }}
+          touch -d @0 "$MELANGE_KEYNAME"
 
       - name: 'Prepare package repository'
         if: ${{ inputs.enterprise == 'true' }}
+        env:
+          INPUTS_ARCH: ${{ inputs.arch }}
+          INPUTS_ENTERPRISE_BUCKET_NAME: ${{ inputs.enterprise_bucket_name }}
         run: |
           # yay wolfi!
           apk add gcsfuse
@@ -148,24 +155,26 @@ jobs:
           # cheerful way to recreate the make targets (class A HEADs) locally
           # without syncing the whole bucket (class A+B).
           mkdir -p /gcsfuse/enterprise-registry
-          gcsfuse -o ro --implicit-dirs --only-dir os ${{ inputs.enterprise_bucket_name }} /gcsfuse/enterprise-registry
+          gcsfuse -o ro --implicit-dirs --only-dir os "$INPUTS_ENTERPRISE_BUCKET_NAME" /gcsfuse/enterprise-registry
 
-          mkdir -p ./packages/${{ inputs.arch }}
+          mkdir -p "./packages/${INPUTS_ARCH}"
           # Symlink the gcsfuse mount to ./packages/ and the pub key to workaround the Makefile CWD assumptions
-          ln -s /gcsfuse/enterprise-registry/${{ inputs.arch }}/*.apk ./packages/${{ inputs.arch }}/
+          ln -s /gcsfuse/enterprise-registry/"${INPUTS_ARCH}"/*.apk "./packages/${INPUTS_ARCH}/"
 
           # Make a copy of the APKINDEX.* since we'll need to write to it on package builds
-          cp /gcsfuse/enterprise-registry/${{ inputs.arch }}/APKINDEX.* ./packages/${{ inputs.arch }}/
+          cp /gcsfuse/enterprise-registry/"${INPUTS_ARCH}"/APKINDEX.* "./packages/${INPUTS_ARCH}/"
 
           # Ensure the file exists at all, so we can upload it as an artifact.
           touch packages.log
 
       - name: 'Build Wolfi'
         if: ${{ inputs.enterprise == 'false' }}
+        env:
+          INPUTS_PACKAGES: ${{ inputs.packages }}
         run: |
           # Setup the melange cache dir on the host so we can use that in subsequent builds
           mkdir ../.melangecache
-          IFS=',' read -ra packages <<< "${{ inputs.packages }}"
+          IFS=',' read -ra packages <<< "$INPUTS_PACKAGES"
           for package in "${packages[@]}"; do
             make MELANGE_EXTRA_OPTS="--create-build-log --cache-dir=$(pwd)/../.melangecache" REPO="$GITHUB_WORKSPACE/packages" package/"$package" -j1
             make REPO="$GITHUB_WORKSPACE/packages" test/"$package" -j1
@@ -173,10 +182,12 @@ jobs:
 
       - name: 'Build Enterprise Packages'
         if: ${{ inputs.enterprise == 'true' }}
+        env:
+          INPUTS_PACKAGES: ${{ inputs.packages }}
         run: |
           # Setup the melange cache dir on the host so we can use that in subsequent builds
           mkdir ../.melangecache
-          IFS=',' read -ra packages <<< "${{ inputs.packages }}"
+          IFS=',' read -ra packages <<< "$INPUTS_PACKAGES"
           for package in "${packages[@]}"; do
             make MELANGE_EXTRA_OPTS="--create-build-log --cache-dir=$(pwd)/../.melangecache --keyring-append=/gcsfuse/enterprise-registry/chainguard-enterprise.rsa.pub" REPO="$GITHUB_WORKSPACE/packages" package/"$package" -j1
             make REPO="$GITHUB_WORKSPACE/packages" MELANGE_EXTRA_OPTS="--keyring-append=/gcsfuse/enterprise-registry/chainguard-enterprise.rsa.pub" test/"$package" -j1
@@ -205,6 +216,8 @@ jobs:
           } >> "$GITHUB_OUTPUT"
 
       - name: "Check that packages can be installed with apk add"
+        env:
+          FILES_TO_UPLOAD: ${{ steps.list_built_packages.outputs.files_to_upload }}
         run: |
           # Create a fake linux fs under /tmp/emptyroot to pass to `apk --root`.
           mkdir -p /tmp/emptyroot/etc/apk
@@ -218,7 +231,7 @@ jobs:
           apk update --root /tmp/emptyroot
 
           # Find .apk files and add them to the string
-          IFS=',' read -ra files <<< "${{ steps.list_built_packages.outputs.files_to_upload }}"
+          IFS=',' read -ra files <<< "$FILES_TO_UPLOAD"
           for f in "${files[@]}"; do
               tar -Oxf "$f" .PKGINFO
               apk add --root /tmp/emptyroot --repository ./packages --allow-untrusted --simulate "$f"
