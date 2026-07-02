@@ -74,11 +74,13 @@ runs:
     - name: 'Upload the security database to a bucket'
       run: |
         # Don't cache the security.json.
-        # ENABLE_ACL_PUBLIC_READ is intentionally unquoted: it is an optional
-        # flag that is either empty or "--canned-acl=publicRead" and must
-        # word-split (or vanish when empty).
+        # ENABLE_ACL_PUBLIC_READ is an optional flag: empty, or a single token
+        # like "--canned-acl=publicRead". Build it as an array so it is passed
+        # as one quoted argument when set and omitted entirely when empty.
+        acl_args=()
+        [ -n "$ENABLE_ACL_PUBLIC_READ" ] && acl_args=("$ENABLE_ACL_PUBLIC_READ")
         gcloud --quiet alpha storage cp \
-            $ENABLE_ACL_PUBLIC_READ --cache-control=no-store \
+            "${acl_args[@]}" --cache-control=no-store \
             './osv/**' \
             "gs://${GCS_APK_BUCKET_NAME}/${GCS_APK_DIRECTORY_NAME}/osv/"
       shell: bash
