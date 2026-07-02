@@ -90,6 +90,8 @@ jobs:
 
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         if: ${{ inputs.enterprise == 'false' }}
+        with:
+          persist-credentials: false
 
 
       - uses: octo-sts/action@f603d3be9d8dd9871a265776e625a27b00effe05 # v1.1.1
@@ -102,6 +104,7 @@ jobs:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         if: ${{ inputs.enterprise == 'true' }}
         with:
+          persist-credentials: false
           ref: ${{ inputs.checkout_sha }}
           submodules: "recursive"
           token: ${{ steps.octo-sts.outputs.token }}
