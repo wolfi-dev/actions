@@ -27,7 +27,7 @@ inputs:
 
 runs:
   using: 'docker'
-  image: docker://ghcr.io/wolfi-dev/sdk:latest@sha256:bfe574a465dd54bdec763eac1180abd64beadb426638354a6b34c9948c7cde62
+  image: docker://ghcr.io/wolfi-dev/sdk:latest@sha256:79b07e788dd1c12dcabc8c10df6b8921fb7e5a391d5bc7bf4a7844e3cdcf27d5
   entrypoint: wolfictl
   args:
     - update
