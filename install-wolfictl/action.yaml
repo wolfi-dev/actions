@@ -10,6 +10,6 @@ runs:
       run: | # zizmor: ignore[github-env] $TMP is a trusted mktemp -d path (runner-owned, 0700, holds only wolfictl from the pinned sdk image); no attacker-controlled value reaches $GITHUB_PATH
         # Copy wolfictl out of the wolfictl image and onto PATH
         TMP=$(mktemp -d)
-        docker run --rm -i -v "$TMP":/out --entrypoint /bin/sh ghcr.io/wolfi-dev/sdk:latest@sha256:0c02e339a0c606f91af19dc61ad7e9c490889b75bbe23d2e86ad2aca0aed0197 -c "cp /usr/bin/wolfictl /out"
+        docker run --rm -i -v "$TMP":/out --entrypoint /bin/sh ghcr.io/wolfi-dev/sdk:latest@sha256:27383bfb0a2a90c4f9c79cd4179da5a665a35239f05b5d98bf384f77333b3f7e -c "cp /usr/bin/wolfictl /out"
         echo "$TMP" >> "$GITHUB_PATH"
       shell: bash
