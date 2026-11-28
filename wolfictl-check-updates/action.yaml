@@ -19,7 +19,7 @@ runs:
   using: "composite"
   steps:
     - name: wolfictl-check-updates
-      uses: docker://ghcr.io/wolfi-dev/sdk:latest@sha256:ed67c1a54fd1348918e9e403b0285efd3695739faa2842f2c045309cf79cff90
+      uses: docker://ghcr.io/wolfi-dev/sdk:latest@sha256:05dca9384205c7c696ec51e1840d8e814eb66c9fafe617083056094507852331
       with:
         entrypoint: wolfictl
         args: check update ${{ inputs.changed_files }}
